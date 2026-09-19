@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jovalen — Business Operating System</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body class="auth-body">
+  <main class="auth-wrap">
+    <section class="auth-hero">
+      <div class="auth-brand">
+        <div class="logo">J</div>
+        <div>
+          <h1>Jovalen</h1>
+          <p>Business Operating System</p>
+        </div>
+      </div>
+      <div class="auth-hero-text">
+        <h2>Run, understand, automate, and grow your business from one connected platform.</h2>
+        <ul class="auth-points">
+          <li>Customers, leads, sales, invoices, expenses and tasks in one place</li>
+          <li>AI answers questions about your business from your real data</li>
+          <li>Designed for small and growing businesses</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="auth-card">
+      <div class="auth-tabs">
+        <button class="tab active" data-auth-tab="login">Login</button>
+        <button class="tab" data-auth-tab="signup">Create account</button>
+      </div>
+
+      <form id="login-form" class="auth-form" data-form="login">
+        <h3>Welcome back</h3>
+        <label>Email
+          <input type="email" name="email" required autocomplete="email" />
+        </label>
+        <label>Password
+          <input type="password" name="password" required autocomplete="current-password" />
+        </label>
+        <button type="submit" class="btn btn-primary btn-block">Login</button>
+      </form>
+
+      <form id="signup-form" class="auth-form hidden" data-form="signup">
+        <h3>Start your business workspace</h3>
+        <label>Your name
+          <input type="text" name="name" required />
+        </label>
+        <label>Business name
+          <input type="text" name="orgName" required />
+        </label>
+        <div class="grid-2">
+          <label>Industry
+            <input type="text" name="industry" placeholder="e.g. Retail, Consulting" />
+          </label>
+          <label>Location
+            <input type="text" name="location" placeholder="e.g. Lagos, Nigeria" />
+          </label>
+        </div>
+        <div class="grid-2">
+          <label>Currency
+            <select name="currency">
+              <option value="NGN">NGN — Naira</option>
+              <option value="KES">KES — Kenyan Shilling</option>
+              <option value="GHS">GHS — Cedi</option>
+              <option value="ZAR">ZAR — Rand</option>
+              <option value="USD">USD — Dollar</option>
+              <option value="GBP">GBP — Pound</option>
+            </select>
+          </label>
+          <label>Business size
+            <select name="size">
+              <option value="1-10">1–10 employees</option>
+              <option value="11-50">11–50 employees</option>
+              <option value="50+">50+ employees</option>
+            </select>
+          </label>
+        </div>
+        <label>Email
+          <input type="email" name="email" required />
+        </label>
+        <label>Password
+          <input type="password" name="password" required minlength="6" placeholder="At least 6 characters" />
+        </label>
+        <button type="submit" class="btn btn-primary btn-block">Create account</button>
+      </form>
+
+      <p id="auth-error" class="auth-error"></p>
+      <p class="auth-hint">Secured demo — all data is stored locally on this device.</p>
+    </section>
+  </main>
+  <script type="module" src="/js/auth.js"></script>
+</body>
+</html>

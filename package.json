@@ -1,0 +1,16 @@
+{
+  "name": "jovalen",
+  "version": "0.1.0",
+  "description": "Jovalen Business Operating System - AI-powered business management MVP",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}
