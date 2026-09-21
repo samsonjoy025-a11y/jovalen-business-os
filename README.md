@@ -2,7 +2,7 @@
 
 **Jovalen Business OS** is an AI-powered business operating system that brings a company's customers, sales, finances, operations, employees, and business data into one connected workspace — and uses AI to turn that data into insights, recommendations, and automated actions.
 
-This is a fully runnable, **zero-dependency** (no `npm install`) web application built as an MVP from the Jovalen Product Requirements Document (v1.1). It runs on Node.js using only built-in modules, so it works anywhere Node does, even on low-bandwidth connections.
+This is a fully runnable, **zero-dependency** (no `npm install`) web application built as an MVP from the Jovalen Product Requirements Document (v1.1). It runs on Node.js using only built-in modules.
 
 ---
 
@@ -10,29 +10,29 @@ This is a fully runnable, **zero-dependency** (no `npm install`) web application
 
 Jovalen is a single-platform OS for running a small or growing business. Instead of juggling several disconnected tools — WhatsApp for customers, Excel or Google Sheets for records, separate accounting software for money, and email for tasks — Jovalen keeps the core records of the business in one place with a single source of truth, and adds an AI layer that reads those records and answers business questions with real, cited data.
 
-The system is multi-tenant (each business is fully isolated from every other), role-based (owner / finance / sales / staff each see and can do exactly what their role allows), and uses AI that never guesses — it grounds every answer in the actual records the user is permitted to see.
+The system is **multi-tenant** (each business is fully isolated from every other) and **role-based** (owner / finance / sales / staff each see and can do exactly what their role allows), and its AI never guesses — it grounds every answer in the actual records the user is permitted to see.
 
-## The problem it solves
+## Architecture
 
-Small and medium businesses today run on a patchwork of tools that do not talk to each other. This creates:
+Jovalen is built as a system of small, independent Node.js processes that communicate locally. An API gateway is the single entry point for the browser and external webhooks; it authenticates each request and routes it to the right service.
 
-- **Duplicate and manual data entry** — the same customer is typed into a notepad, a spreadsheet, and an invoice tool.
-- **Lost information and poor visibility** — owners cannot see, in one place, how much customers owe, how much was collected, what is expiring, or who is following up on which lead.
-- **Delayed decisions and missed follow-ups** — leads, invoices, and tasks slip through the cracks because there is no single reminder system.
-- **Untrustworthy reporting** — numbers are scattered across apps, so "how did the month go?" takes hours to answer, and the answer is usually incomplete.
-- **Operational inefficiency** — following up on money, chasing overdue invoices, and assigning work are all manual.
+| Component | Port | Responsibility |
+|-----------|------|----------------|
+| **Gateway** | 3000 | Serves the SPA, authenticates API calls, routes to services, handles webhooks. Single public entry point. |
+| auth-service | 3101 | Signup, login, logout, session tokens (30-day TTL), internal token verification. |
+| workspace-service | 3102 | Business profile, settings, users & roles, departments, notifications, activity feed, integrations. |
+| crm-service | 3103 | Customers, notes, tickets, customer history. |
+| sales-service | 3104 | Leads, deals, sales pipeline, lead conversion. |
+| catalog-service | 3105 | Products, inventory/stock levels, purchase orders. |
+| finance-service | 3106 | Invoices, payments, expenses, approvals, aging. |
+| tasks-service | 3107 | Tasks, projects, comments, attachments, change history. |
+| analytics-service | 3108 | Dashboard, reports, KPIs, CSV export. Aggregates across services. |
+| ai-service | 3109 | Jovalen AI: intent matching, role-scoped answers with citations. |
+| automation-service | 3110 | Lead auto-assignment, follow-up tasks, overdue-invoice/task alerts. |
+| import-service | 3111 | CSV import (dry-run + commit) for customers/leads/products/invoices/expenses; sample-data seeder. |
+| documents-service | 3112 | Document & folder library with file storage. |
 
-Jovalen replaces this fragmentation with **one connected platform**, and its AI assistant answers questions like *"How much revenue did we collect this month?"*, *"Who owes us money?"*, and *"Which expenses were not approved?"* directly from the business's own records — with citations back to the underlying data.
-
-## Target users
-
-The platform is designed for small and growing businesses (roughly 5–50 employees), with an emphasis on African SME workflows. The primary users are:
-
-- **Business owners / founders** who want full visibility into revenue, expenses, customers, and team activity in one place.
-- **Finance / accounting staff** who create and track invoices, record payments and expenses, and manage the approval workflow.
-- **Sales teams** who manage customers, capture and follow up leads, and run a sales pipeline.
-- **Operations / staff** who receive and complete tasks and submit expenses.
-- **University projects & assignment reviewers** who need a complete, self-contained software system that is easy to run and demonstrates a full business-management product.
+The launcher (`server/start.js`) spawns every service and the gateway and keeps them running together. Each service persists its own data to a JSON store under `server/services/data/` (auto-created and git-ignored).
 
 ## Main features
 
@@ -41,45 +41,37 @@ The platform is designed for small and growing businesses (roughly 5–50 employ
 | **Business Workspace** | Business profile, team members, roles & permissions, departments, notification preferences, notifications center, activity feed, guided setup checklist |
 | **CRM** | Customer profiles, contact info, notes, tags, statuses, customer balances |
 | **Leads & Sales Pipeline** | Lead capture, source, assignment, follow-up dates, lead → customer + deal conversion, pipeline board (qualification → proposal → negotiation → won/lost) |
-| **Product Catalogue** | Products/services with pricing, SKU, unit, active/inactive — the reference data behind invoices |
-| **Finance** | Invoices with line items from the catalogue, full and partial payment tracking, outstanding balances, expense recording with an approval workflow |
-| **Tasks & Operations** | Tasks with assignees, due dates, priorities, status, comments, and change history |
+| **Product Catalogue** | Products/services with pricing, SKU, unit, stock levels, active/inactive — the reference data behind invoices |
+| **Finance** | Invoices with line items from the catalogue, full and partial payment tracking, outstanding balances, expense recording with an approval workflow, invoice aging |
+| **Tasks & Operations** | Tasks with assignees, due dates, priorities, status, comments, change history; projects |
 | **Business Analytics** | Revenue, expenses, profit, outstanding invoices, invoice aging buckets, pipeline value, period filters (day/week/month/quarter/year), CSV report export |
 | **Jovalen AI** | Natural-language assistant with grounded, role-scoped answers, citations to source records, and "insufficient data" handling |
-| **Data Import & Automation** | CSV import for customers, leads, products, expenses and invoices with dry-run preview and duplicate detection; one-click sample data; event-based automation (lead auto-assignment + follow-up tasks, overdue-invoice alerts, overdue-task reminders) |
+| **Data Import & Automation** | CSV import for customers, leads, products, expenses and invoices with dry-run preview and duplicate detection; one-click sample data; event-based automation |
+| **Integrations & Webhooks** | Provider credentials management (payment, WhatsApp, accounting, sheets, email, calendar) and an authenticated webhook endpoint (`POST /api/webhooks/:provider`) — e.g. payment gateways report payments against invoices automatically. |
 
-Roles & access control (enforced server-side, not just hidden in the UI):
+Roles & access control are enforced server-side, not just hidden in the UI:
 
-- **Owner** — full access to all data and settings; manages team and automation.
+- **Owner** — full access to all data and settings; manages team, automation, and integrations.
 - **Finance** — invoices, expenses, payments, approvals, catalogue.
 - **Sales** — customers, leads, deals, tasks, and AI scoped to their own records.
 - **Staff** — their own tasks, expenses, notifications, and limited AI.
-
-## Main user journey
-
-1. **Create the business account.** A new user signs up with a name, business name, email, and password. Jovalen creates the business workspace and the owner account with a secure scrypt-hashed password.
-2. **Get set up quickly.** The dashboard shows a guided setup checklist: complete the business profile → add team members → add customers → add products → create the first invoice → ask Jovalen AI a question. Each step links to the right screen, and progress is tracked on the dashboard.
-3. **Bring in existing data.** Instead of retyping spreadsheets, the user imports customers, leads, products, expenses, or invoices from a CSV file with a dry-run preview first — the app detects columns by header name, reports row-level problems, and skips duplicates.
-4. **Run daily operations.** The team works in one place: customers and leads are managed in CRM; offers turn into invoices drawn from the product catalogue; payments and expenses are recorded with approval; tasks are assigned, commented on, and tracked with due dates.
-5. **Get notified.** Automated workflows watch for unassigned leads, overdue invoices, and overdue tasks, creating in-app notifications that respect each user's notification preferences.
-6. **Ask and decide with AI.** The owner asks Jovalen AI questions such as *"Who owes us money?"* or *"How much did we collect this month?"* and gets an answer with citations to the exact invoices, customer, or records it was based on — so decisions rest on the business's own data.
-7. **Review performance.** The analytics dashboard shows revenue, expenses, profit, outstanding balances, aging buckets, and pipeline value for any period, and can export a CSV report for offline sharing.
 
 ## Technologies used
 
 | Layer | Technology |
 |-------|------------|
 | Runtime | **Node.js 18+** (built-in `http`, `fs`, `crypto`) — zero npm dependencies |
-| Data | **JSON file persistence** (`server/data/db.json`) with an in-memory cache and atomic writes; multi-tenant data layer |
-| Auth | **scrypt password hashing** (Node `crypto`) + persistent session tokens (30-day TTL, stored in `server/data/sessions.json`) |
-| API | **REST JSON API** (`/api/*`) with server-side role-based access control |
+| Data | **JSON file persistence** — one store per service under `server/services/data/`, with in-memory cache and atomic writes |
+| Auth | **scrypt password hashing** (Node `crypto`) + opaque session tokens (30-day TTL) |
+| API | **REST JSON API** (`/api/*`) with server-side role-based access control, routed through a single gateway |
 | Front-end | **Vanilla JavaScript ES modules** (no build step), HTML5, CSS3 |
 | AI | **Rule-based business-intelligence engine** with intent matching, role scoping, citations, and "insufficient data" handling |
 
 Design decisions:
 
 - **No build step, no native modules, no `npm install`** — the project runs anywhere Node runs, which suits low-connectivity markets and simplifies running the assignment.
-- **AI is a query engine, not a chat wrapper** — it answers from authorized records, cites them, and scopes by role (PRD §13). A hosted LLM can later be plugged in behind the same `/api/ai/ask` contract.
+- **Every option squares with the PRD** (v1.1): roles §6, notifications §10, automation §11, analytics §12, AI §13, import §16, integrations §17, documents, projects, and inventory included as completed modules.
+- **AI is a query engine, not a chat wrapper** — it answers from authorized records, cites them, and scopes by role. A hosted LLM can later be plugged in behind the same `/api/ai/ask` contract.
 
 ## How to run the project locally
 
@@ -89,11 +81,11 @@ Design decisions:
 - A web browser (Chrome, Edge, Firefox, etc.).
 - No `npm install` is required — the app uses only Node's built-in modules.
 
-### On Windows (PowerShell)
+### Start everything
 
-```powershell
-cd "C:\Users\HP\Documents\Jovalen Business OS\jovalen-app"
-node server/index.js
+```bash
+npm start
+# or directly: node server/start.js
 ```
 
 Then open your browser at:
@@ -102,32 +94,33 @@ Then open your browser at:
 http://localhost:3000
 ```
 
-### On Git Bash / macOS / Linux
+### Migrating data from the legacy monolith
+
+If you have data from the earlier single-server version (`server/data/db.json` + `server/data/sessions.json`), run the migration first:
 
 ```bash
-cd "/c/Users/HP/Documents/Jovalen Business OS/jovalen-app"   # Git Bash path
-# or: cd "C:\Users\HP\Documents\Jovalen Business OS\jovalen-app"
-node server/index.js
+npm run migrate
 ```
 
-Then open `http://localhost:3000`.
-
-### Using a different port
-
-```powershell
-$env:PORT = 4000
-node server/index.js
-# now open http://localhost:4000
-```
+The launcher also detects legacy data automatically on boot and migrates it before starting the services.
 
 ### First run
 
 1. Open `http://localhost:3000` — you will see the login/signup page.
 2. Click **Create account**, fill in your name, business name, email, and a password (at least 6 characters), and submit.
 3. On the dashboard you can either:
-   - **Load a sample business** (adds realistic demo customers, leads, deals, invoices, expenses, and tasks so every module is explorable immediately), or
+   - **Seed demo data** (adds realistic demo customers, leads, deals, invoices, expenses, and tasks so every module is explorable immediately), or
    - start fresh and follow the **Getting started** checklist.
-4. To test roles, go to **Team & Settings**, add a colleague with a Sales, Finance, or Staff role (a temporary password is generated), log out, and log back in with that account.
+4. To test roles, go to **Team & Settings**, add a colleague with a Sales, Finance, or Staff role, log out, and log back in with that account.
+
+### Using a different HTTP port
+
+Set `PORT` before starting — the gateway and every service share the shift:
+
+```powershell
+$env:PORT = 4000
+npm start
+```
 
 ### Project structure
 
@@ -142,23 +135,30 @@ jovalen-app/
 │       ├── auth.js          # Login / signup logic
 │       ├── app.js           # SPA router, navigation, event delegation
 │       └── views/           # One module per screen
-├── server/                  # Back-end
-│   ├── index.js             # HTTP server + static files
-│   ├── routes.js            # REST API with RBAC (application logic)
-│   ├── store.js             # Multi-tenant JSON data layer
-│   ├── auth.js              # scrypt hashing + persistent sessions
-│   ├── seed.js              # Sample business loader
-│   ├── ai.js                # Jovalen AI query engine
-│   ├── automation.js        # Event-based workflows + scheduler
-│   ├── csv.js               # CSV parser + column matching
-│   └── data/                # db.json + sessions.json (created at runtime)
-├── package.json             # Project metadata + start script
-├── .gitignore               # Ignores runtime data and logs
+├── server/
+│   ├── start.js             # Launcher: spawns all services + gateway
+│   ├── gateway.js           # API gateway: auth, routing, webhooks, static files
+│   ├── core.js              # Shared runtime: HTTP server, stores, tokens, RBAC
+│   ├── lib.js               # Shared libraries for services (conf, identity, calls)
+│   ├── migrate.js           # Legacy data → per-service stores
+│   ├── config.json          # Secrets (auto-generated if missing, git-ignored)
+│   └── services/            # Independent service processes
+│       ├── auth-service.js          └── automation-service.js
+│       ├── workspace-service.js      └── import-service.js
+│       ├── crm-service.js            └── documents-service.js
+│       ├── sales-service.js
+│       ├── catalog-service.js
+│       ├── finance-service.js
+│       ├── tasks-service.js
+│       ├── analytics-service.js
+│       └── ai-service.js
+├── package.json             # Project metadata + start scripts
+├── .gitignore               # Ignores runtime data, secrets, and logs
 └── README.md                # This file
 ```
 
 ### Notes on data
 
-- Business data is stored in `server/data/db.json`, created automatically on first signup and **git-ignored**.
-- Login sessions persist in `server/data/sessions.json` (30-day expiry), so users stay signed in across restarts.
-- The `db.json` and `sessions.json` files are runtime data and are not included in this project folder — they are created the first time the server runs.
+- Each service persists its own data to `server/services/data/*.json`, created automatically on first run and **git-ignored**.
+- Login sessions persist with a 30-day expiry, so users stay signed in across restarts.
+- Shared secrets live in `server/config.json`, auto-generated on first boot and **git-ignored**.

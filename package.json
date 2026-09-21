@@ -1,16 +1,25 @@
 {
-  "name": "jovalen",
-  "version": "0.1.0",
-  "description": "Jovalen Business Operating System - AI-powered business management MVP",
+  "name": "jovalen-business-os",
+  "version": "2.0.0",
+  "description": "Jovalen Business OS - AI-powered business management platform (microservices, role-based, multi-tenant)",
   "type": "module",
-  "main": "server/index.js",
+  "main": "server/start.js",
   "scripts": {
-    "start": "node server/index.js",
-    "dev": "node server/index.js"
+    "start": "node server/start.js",
+    "dev": "node server/start.js",
+    "migrate": "node server/migrate.js"
   },
   "engines": {
     "node": ">=18"
   },
+  "keywords": [
+    "business-os",
+    "crm",
+    "erp",
+    "ai",
+    "microservices",
+    "zero-dependency"
+  ],
   "license": "UNLICENSED",
   "private": true
 }

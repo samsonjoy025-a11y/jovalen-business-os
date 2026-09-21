@@ -1,6 +1,21 @@
+# Dependencies (none required, but keep the folder out)
 node_modules/
-server/data/*.json
-server/data/*.json.tmp
+
+# Runtime secrets — auto-generated on first run by server/lib.js
+server/config.json
+
+# Runtime data (multi-tenant JSON stores) — created on first run
+server/data/
+server/services/data/
+
+# Local environment and logs
 .env
+.env.*
 *.log
+*.json.tmp
+
+# OS + editor files
 .DS_Store
+Thumbs.db
+.vscode/
+.idea/
